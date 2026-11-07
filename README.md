@@ -1,6 +1,8 @@
 # Color Finder by Skullboneslayer
 
-<img width="344" height="512" alt="image" src="https://github.com/user-attachments/assets/f40bfa8e-9ac3-48fe-8553-0282e8d739c0" /> 
+<p align="center">
+  <img width="344" height="512" alt="Color Finder screenshot" src="https://github.com/user-attachments/assets/f40bfa8e-9ac3-48fe-8553-0282e8d739c0" />
+</p>
 
 
 A free Windows color picker. Select a pixel on your screen and copy its color values.
@@ -13,13 +15,17 @@ Run **Color Finder Setup.exe** to install the app, then open **Color Finder** fr
 
 Press **Esc** or right-click to cancel a pick. Arrow keys move one pixel; holding Shift moves ten.
 
+<p align="center">
 <img width="910" height="632" alt="image" src="https://github.com/user-attachments/assets/f35f40e0-951a-4174-95e3-8e12ea68060f" />
+</p>
 
 Displays HEX, RGB, HSL, HSV/HSB, approximate CMYK, RGB 0-1, and linear RGB.
 
 Use top left arrow navigator to pop-out the "Palette" of saved colors. Right click > Remove color to delete. All other colors are NOT saved between restarts.
 
+<p align="center">
 <img width="495" height="511" alt="image" src="https://github.com/user-attachments/assets/d32ab413-0ac4-4010-a3d9-539b661b829e" />
+</p>
 
 
 **List of keyboard shortcuts (Unchangeable):**

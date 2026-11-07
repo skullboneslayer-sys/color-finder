@@ -1,0 +1,82 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <ApplicationManifest>Assets/app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets/ColorFinder.ico</ApplicationIcon>
+    <AssemblyName>ColorFinder</AssemblyName>
+    <RootNamespace>ColorFinder</RootNamespace>
+    <Product>Color Finder</Product>
+    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
+    <GenerateAssemblyInformationalVersionAttribute>false</GenerateAssemblyInformationalVersionAttribute>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="src/**/*.cs" />
+  </ItemGroup>
+  <!-- Preserve the executable's existing metadata without an external build script. -->
+  <UsingTask TaskName="ColorFinderVersionResource" TaskFactory="RoslynCodeTaskFactory"
+             AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <Task>
+      <Code Type="Class" Language="cs"><![CDATA[
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+public sealed class ColorFinderVersionResource : Microsoft.Build.Utilities.Task {
+    [Microsoft.Build.Framework.Required]
+    public string AssemblyPath { get; set; }
+
+    public override bool Execute() {
+        try {
+            Remove(AssemblyPath);
+            return true;
+        } catch (Exception error) {
+            Log.LogErrorFromException(error);
+            return false;
+        }
+    }
+    delegate bool LanguageCallback(IntPtr module, IntPtr type, IntPtr name, ushort language, IntPtr parameter);
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern IntPtr LoadLibraryEx(string file, IntPtr reserved, uint flags);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool FreeLibrary(IntPtr module);
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern bool EnumResourceLanguages(IntPtr module, IntPtr type, IntPtr name, LanguageCallback callback, IntPtr parameter);
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern IntPtr BeginUpdateResource(string file, bool deleteExisting);
+    [DllImport("kernel32.dll", CharSet=CharSet.Unicode, SetLastError=true)] static extern bool UpdateResource(IntPtr update, IntPtr type, IntPtr name, ushort language, IntPtr data, uint size);
+    [DllImport("kernel32.dll", SetLastError=true)] static extern bool EndUpdateResource(IntPtr update, bool discard);
+    public static void Remove(string file) {
+        var languages = new List<ushort>();
+        var module = LoadLibraryEx(file, IntPtr.Zero, 0x22);
+        if (module == IntPtr.Zero) throw new Win32Exception();
+        try {
+            LanguageCallback callback = delegate(IntPtr m, IntPtr t, IntPtr n, ushort language, IntPtr p) { languages.Add(language); return true; };
+            if (!EnumResourceLanguages(module, new IntPtr(16), new IntPtr(1), callback, IntPtr.Zero)) {
+                int error = Marshal.GetLastWin32Error();
+                if (error != 1812 && error != 1813 && error != 1814 && error != 1815) throw new Win32Exception(error);
+            }
+        } finally { FreeLibrary(module); }
+        if (languages.Count == 0) return;
+        var update = BeginUpdateResource(file, false);
+        if (update == IntPtr.Zero) throw new Win32Exception();
+        bool complete = false;
+        try {
+            foreach (var language in languages)
+                if (!UpdateResource(update, new IntPtr(16), new IntPtr(1), language, IntPtr.Zero, 0)) throw new Win32Exception();
+            complete = true;
+        } finally {
+            if (!EndUpdateResource(update, !complete)) throw new Win32Exception();
+        }
+    }
+}
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="RemoveOptionalFileVersion" AfterTargets="CoreCompile"
+          Condition="'$(DesignTimeBuild)' != 'true' and Exists('@(IntermediateAssembly->'%(FullPath)')')">
+    <ColorFinderVersionResource AssemblyPath="@(IntermediateAssembly->'%(FullPath)')" />
+  </Target>
+</Project>
